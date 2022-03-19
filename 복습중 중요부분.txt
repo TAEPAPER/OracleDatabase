@@ -1,0 +1,111 @@
+[2022010702]
+
+CASE WHEN SUBSTR(MEM_REGNO2,1,1)='1' THEN        
+            '남성회원'
+    ELSE
+            '여성회원'
+    END AS 성별
+
+MEM_ADD1 LIKE '대전%';  문자에서만 가능해!
+
+WHERE SUBSTR(MEM_ADD1,1,2) IN ('충남','서울');
+
+LAST_DAY(' ')
+
+
+CASE WHEN SUBSTR(MEM_REGNO2,1,1) ='1' OR
+                SUBSTR(MEM_REGNO2,1,1)= '2' THEN
+                EXTRACT(YEAR FROM SYSDATE) - 
+                (TO_NUMBER(SUBSTR(MEM_REGNO1,1,2))+1900)  --1900 년대 생들은 1 OR 2
+                
+            ELSE 
+                 EXTRACT(YEAR FROM SYSDATE) -              --2000년대생들은 3 OR 4
+                (TO_NUMBER(SUBSTR(MEM_REGNO1,1,2))+2000) 
+           END  AS 나이,   
+
+
+--22-01-11-02
+사용예) 회원테이블에서 마일리지가 1000이하인 회원의 마일리지를 1000으로 바꾸어 조회하시오.
+           ALIAS는 회원번호, 회면명,직업,마일리지
+           
+           SELECT MEM_ID AS 회원번호, 
+                  MEM_NAME AS 회원명,
+                  MEM_JOB AS 직업,
+                  MEM_MILEAGE AS 원본마일리지,             --행에서 비교할 때는 GREATEST와 LEASTEST를 쓴다
+                 GREATEST(MEM_MILEAGE,1000) AS 마일리지  --컬럼 데이터랑 1000이랑 비교
+                FROM MEMBER;                            --MAX로 풀기 못한다
+                
+           SELECT MAX(MEM_MILEAGE),
+                  MIN(MEM_MILEAGE)
+               FROM MEMBER;
+
+       -ROUND(N1,l):제시된 수 N1에서 소숫점이하 l+1번째 자리에서 반올림하여 l자리까지 반환  --돈을 내어줄 때 사용
+       -TRUNC(N1,l):제시된 수 N1에서 소숫점이하 l+1번째 자리에서  자리버림하여 l자리까지 반환 --돈을 받아들일 때 사용
+       -l이 생락되면 0으로 간주 --소수자리수 아예없어져서 정수가 된다
+
+      MOD(N1, E):      N1을 E로 나눈 **나머지** 반환
+     
+
+      CASE WHEN 조건식 THEN ' '
+             WHEN 조건식 THEN ' '
+	 WHEN 조건식 THEN ' '
+             else
+            end
+
+       case 조건식  when 결과값 then ' '
+ 		when 결과값 then ' '
+		 when 결과값 then ' '
+		else ' '
+		end 
+
+
+--[2022-01-12-01]
+
+ 사용예) 회원테이블에서 연령을 구하고 각 년령대별 회원수를 조회하시오
+    
+    ALIAS는 연령대, 회원수
+    SELECT TRUNC((EXTRACT(YEAR FROM SYSDATE)  
+          - EXTRACT(YEAR FROM MEM_BIR)),-1)||'대' AS 연령대, --나이에서 일의자리에서 자리버림 하세요
+           COUNT(*) AS 회원수  --회원수 세는 것 ,집계함수
+    FROM MEMBER
+    GROUP BY TRUNC((EXTRACT(YEAR FROM SYSDATE)  --집계함수쓸 때는 꼭 GROUP BY  해줘야해
+          - EXTRACT(YEAR FROM MEM_BIR)),-1)
+    ORDER BY 1;
+
+
+ --[2022-01-13-01]
+
+사용예) 오늘이 2005년 7월 28일이고 쇼핑몰 페이지에 처음 로그인한 경우  장바구니번호를 생성하시오
+          SELECT TO_CHAR(SYSDATE,'YYYYMMDD')||
+                 TRIM(TO_CHAR(TO_NUMBER(SUBSTR(MAX(CART_NO),9))+1,'00000')) --무효의 0을 추가시키기 위해'00000'! 
+            FROM CART
+           WHERE SUBSTR(CART_NO,1,8) = TO_CHAR(SYSDATE,'YYYYMMDD');
+
+ SELECT TO_CHAR(12345,'0000000') FROM DUAL;   ==> 결과값 :  0012345
+
+
+
+-- 사용예)상품테이블(GOODS)에 다음자료를 추가로 등록하시오
+
+(상품코드 생성)
+    
+    SELECT 'P101'
+            ||TRIM(TO_CHAR(TO_NUMBER(
+              SUBSTR(MAX(PROD_ID),5))+1,'000000')) AS P_CODE
+    FROM GOODS
+    WHERE PROD_LGU = 'P101';
+    
+    (추가등록)
+    INSERT INTO GOODS       --컬럼명 생략하고 바로 values값 지정해줌!
+    SELECT A.P_CODE, '삼성 노트북 15인치','P101',1200000
+    FROM (SELECT 'P101'
+            ||TRIM(TO_CHAR(TO_NUMBER(
+                SUBSTR(MAX(PROD_ID),5))+1,'000000')) AS P_CODE
+                    FROM GOODS
+                    WHERE PROD_LGU = 'P101') A;
+
+
+ SELECT TO_DATE('20050708'),
+            TO_CHAR(TO_DATE('20220113092035','YYYYMMDDHHMISS') ,
+                    'YYYY/MM/DD HH:MI:SS')
+        FROM DUAL;
