@@ -109,3 +109,37 @@ CASE WHEN SUBSTR(MEM_REGNO2,1,1) ='1' OR
             TO_CHAR(TO_DATE('20220113092035','YYYYMMDDHHMISS') ,
                     'YYYY/MM/DD HH:MI:SS')
         FROM DUAL;
+
+
+  --[2022-01-13-02] 
+
+관계형 데이터에서의 <<JOIN>>
+--여러개의 분산된 데이터를 하나로 묶는 것
+
+[left outer join]
+-둘이 겹치는것 + 왼쪽에 있는 것
+[inner join] : 둘이 모두 있는 것만 ! (같은 값 없으면 그 행 없어짐)
+
+
+--[2022-01-14-01]
+ORACLE SQL 문 작성, 실행 순서
+
+작성	실행 순서
+SELECT	     5
+FROM	     1
+WHERE	     2
+GROUP BY    3 
+HAVING	     4
+ORDER BY     6
+
+사용예) 사원들의 급여가 평균급여보다 적은사원 정보를 조회
+    ALIAS는 사원번호(GROUP BY 의미없음) ,사원명, 부서코드,직무코드,급여,평균급여
+----WHERE절에는 집계함수를 쓸 수 없다!!!
+SELECT A.EMPLOYEE_ID , A.EMP_NAME, A.DEPARTMENT_ID, A.JOB_ID, B.ASAL 
+FROM  HR.EMPLOYEES A , (SELECT AVG(SALARY) AS ASAL FROM HR.EMPLOYEES )B   --SELECT의 결과를 별도의 테이블로 생각해서 별칭 B를 준다!
+WHERE SALARY < B.ASAL
+
+
+--[2022-0117-01]
+사용예) 사원테이블에서 **근무지가 미국 이외인 부서에 근무하는 사원들**의 평균급여와 평균근속년수를 구하시오 --집에 HR 테이블이 없어서 야자시간에 할것!!! 
+
