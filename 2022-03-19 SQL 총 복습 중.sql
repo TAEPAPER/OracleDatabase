@@ -226,5 +226,155 @@ GROUP BY BUY_DATE;
             MEM_JOB,MEM_MILEAGE
     FROM MEMBER;
     
-               
+    --[2022-01-13-02] 
+    
+    사용예) 사원테이블에서 영업실적코드(COMMISSION_PCT)가 NULL이 아닌 사원을 조회하시오.
+    ALIAS 는 사원번호, 사원명,부서코드,영업실적코드
+SELECT EMPLOYEE_ID, EMP_NAME, DEPARTMENT_ID,COMMISSION_PCT
+FROM HR.EMPLOYESS
+WHERE COMMISSION_PCT IS NOT NULL;
 
+사용예)상품테이블에서 색상정보(PROD_COLOR)의 자료가 존재하지 않는
+            상춤을 조회하시오
+ ALIAS는 상품코드, 상품명, 매입단가, 색상정보
+SELECT PROD_ID, PROD_NAME, PROD_COST, PROD_COLOR
+FROM PROD
+WHERE PROD_COLOR IS NOT NULL;
+
+ 사용예) 2005년 6월 **모든** 상품에 대한 상품별 매입현황을 조회
+        ALIAS는 상품명, 매입 수량집계 , 매입금액집계 --외부 조인 (아웃터 조인)
+
+        (2005년 6월 매입 상품)
+        SELECT DISTINCT BUY_PROD
+        FROM BUYPROD
+        WHERE BUY_DATE BETWEEN TO_DATE('20050601') AND
+           LAST_DAY(TO_DATE('20050601'))
+           ORDER BY 1; 
+          
+           (아우터조인 사용)
+    SELECT B.PROD_NAME, NVL(SUM(A.BUY_QTY),0) AS 매입수량집계, NVL(SUM(A.BUY_QTY*B.PROD_COST),0) AS 매입금액집계
+    FROM BUYPROD A 
+         LEFT OUTER JOIN PROD B ON (A.BUY_PROD = B.PROD_ID)
+         AND A.BUY_DATE BETWEEN TO_DATE('20050601') AND
+           LAST_DAY(TO_DATE('20050601'))
+    GROUP BY B.PROD_NAME;
+    
+    --[2022-01-14-01]
+사용예)사원테이블에서 각 부서**'별'**('그룹바이'라는 뜻) 급여합계를 구하되 급여합계가 100000이상이 부서만 조회하시오 --그룹안에 그룹
+        ALIAS는 부서코드, 급여합계
+   SELECT  DEPARTMENT_ID AS 부서코드, SUM(SALARY) AS 급여합계
+   FROM HR.EMPLOYEES 
+   GROUP BY DEPARTMENT_ID
+   HAVING SUM(SALARY)>= 10000
+   ORDERY BY 1;
+   
+  사용예) 사원테이블에서 각 부서별**GROUP BY 쓰라는 뜻!! 평균급여를 구하시오
+        alias는 부서코드, 부서명, 평균급여
+        --이너 조인?
+    SELECT  B.DEPARTMENT_ID , B.DEPARTMENT_NAME, ROUND(AVG(A.SALARY)) AS 평균급여
+    FROM HR.EMPLOYEES A , HR.DEPARTMENTS B 
+    WHERE A.DEPARTMENT_ID = B.DEPARTMENT_ID
+    GROUP BY B.DEPARTMENT_ID, B.DEPARTMENT_NAME
+    ORDER BY 1;
+    
+    사용예)상품테이블에서 분류별 평균 매입가를 조회하시오
+    알리아스는 상품분류, 평균매입가
+    SELECT PROD_LGU , ROUND(AVG(PROD_COST),0)
+    FROM PROD
+    GROUP BY PROD_LGU 
+    ORDER BY 1;
+    
+     문제) 장바구니테이블에서 2005년 4월 **제품별** 판매수량집계를 구하시오
+     
+     SELECT CART_PROD, SUM(CART_QTY)
+     FROM CART
+     WHERE CART_NO LIKE '200504%'
+     GROUP BY CART_PROD
+     ORDER BY 1;
+
+문제)장바구니테이블에서 2005년 4월 **제품별** 판매 수량합계가 10개 이상인 제품을 조회하시오      
+  SELECT CART_PROD ,SUM(CART_QTY)
+  FROM CART
+  WHERE CART_NO LIKE '200504%'
+  GROUP BY CART_PROD
+  HAVING SUM(CART_QTY) >=10
+  ORDER BY 1;
+ 
+ 문제) 매입테이블에서 2005년 1월 ~6월 월별 매입집계를 구하시오
+ SELECT  EXTRACT(MONTH FROM BUY_DATE) AS 월 , SUM(BUY_QTY)
+ FROM BUYPROD
+ WHERE BUY_DATE BETWEEN TO_DATE('20050101') AND LAST_DAY(TO_DATE('20050601'))
+ GROUP BY EXTRACT(MONTH FROM BUY_DATE) 
+ ORDER BY 1;
+
+문제)매입테이블에서 2005년 1~6월 월별, 제품별 매입금액 합계가 1000만원 이상인 정보만 조회하시오 
+ALIAS는 매입월, 제품코드, 매입집계
+SELECT EXTRACT(MONTH FROM BUY_DATE) AS 매입월, BUY_PROD AS 제품별, SUM(BUY_QTY*BUY_COST) AS 매입금액합계
+FROM BUYPROD 
+WHERE   BUY_DATE  BETWEEN ('20050101') AND ('20050701')
+GROUP BY EXTRACT(MONTH FROM BUY_DATE),BUY_PROD
+HAVING SUM(BUY_QTY*BUY_COST) >= 10000000
+ORDER BY 1;
+         
+    문제)회원테이블에서 성별 마일리지 합계를 구하시오
+ ALIAS는 구분,마일리지 합계이며, 구분에는 '여성회원'과 '남성회원'을 출력하시오  
+SELECT  
+      CASE WHEN SUBSTR(MEM_REGNO2,1,1) = '1' OR
+                SUBSTR(MEM_REGNO2,1,1) = '3'      
+                                 THEN  '남성회원' ELSE '여성회원' 
+                                 END AS 구분,
+     SUM(MEM_MILEAGE) AS 마일리지합계
+FROM MEMBER
+GROUP BY CASE WHEN SUBSTR(MEM_REGNO2,1,1) = '1' OR
+                SUBSTR(MEM_REGNO2,1,1) = '3'      
+                                 THEN  '남성회원' ELSE '여성회원' 
+                                 END
+ORDER BY 1;
+
+문제) 회원테이블에서 **연령대별** 해당 연령대의 마일리지 합계를 조회하시오
+        ALIAS는 구분, 마일리지 합계이며 구분난에는 '10대',..;'70'대 등으로 연령대를 출력
+
+SELECT  CASE WHEN SUBSTR(MEM_REGNO2,1,1) = '1' OR
+                  SUBSTR(MEM_REGNO2,1,1) = '2' THEN
+         TRUNC(EXTRACT(YEAR FROM SYSDATE) - 
+              (TO_NUMBER(SUBSTR(MEM_REGNO1,1,2))+1900),-1)                 ELSE
+         ELSE
+         TRUNC(EXTRACT(YEAR FROM SYSDATE) -
+              (TO_NUMBER(SUBSTR(MEM_REGNO1,1,2))+2000),-1)
+                  END ||'대'  AS 구분,
+          SUM(MEM_MILEAGE) AS 마일리지합계
+  FROM MEMBER
+  GROUP BY CASE WHEN SUBSTR(MEM_REGNO2,1,1) = '1' OR
+                  SUBSTR(MEM_REGNO2,1,1) = '2' 
+                  THEN
+         TRUNC(EXTRACT(YEAR FROM SYSDATE) - 
+               (TO_NUMBER(SUBSTR(MEM_REGNO1,1,2))+1900),-1)                 ELSE
+         ELSE
+         TRUNC(EXTRACT(YEAR FROM SYSDATE) -
+           (TO_NUMBER(SUBSTR(MEM_REGNO1,1,2))+2000),-1)
+                  END ||'대'
+  GROUP BY 1;
+
+  사용예) 전체사원의 평균급여를 출력  --전체가 그룹이니까 GROUP BY절 안써  
+ALIAS는 평균급여, 급여합계, 사원수
+SELECT  AVG(SALARY), SUM(SALARY), COUNT(*)
+FROM HR.EMPLOYEES ;
+
+사용예) 사원들의 급여가 평균급여보다 적은사원 정보를 조회
+    ALIAS는 사원번호(GROUP BY 의미없음) ,사원명, 부서코드,직무코드,급여,평균급여
+
+----WHERE절에는 집계함수를 쓸 수 없다!!!
+SELECT A.EMPLOYEE_ID , A.EMP_NAME, A.DEPARTMENT_ID, A.JOB_ID, B.ASAL 
+FROM  HR.EMPLOYEES A , (SELECT AVG(SALARY) AS ASAL FROM HR.EMPLOYEES )B
+WHERE SALARY < B.ASAL
+
+--[2022-0117-01] 
+사용예) 상품테이블에서 상품분류별 평균판매가,평균매입가를 조회하시오
+SELECT PROD_LGU AS 상품분류, ROUND(AVG(PROD_PRICE)) AS 평균판매가 , ROUND(AVG(PROD_COST)) AS 평균매입가
+FROM PROD
+GROUP BY PROD_LGU
+ORDER BY 1;
+   
+   사용예) 사원테이블에서 **근무지가 미국 이외인 부서에 근무하는 사원들**의 평균급여와 평균근속년수를 구하시오 
+   
+   
