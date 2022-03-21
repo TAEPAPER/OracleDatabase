@@ -374,7 +374,111 @@ SELECT PROD_LGU AS 상품분류, ROUND(AVG(PROD_PRICE)) AS 평균판매가 , ROUND(AVG(PR
 FROM PROD
 GROUP BY PROD_LGU
 ORDER BY 1;
-   
+     부서코드 , 부서명, 평균급여, 평균근속연수
    사용예) 사원테이블에서 **근무지가 미국 이외인 부서에 근무하는 사원들**의 평균급여와 평균근속년수를 구하시오 
+   SELECT  A.DEPARTMENT_ID AS 부서코드, B.DEPARTMENT_NAME AS 부서명, 
+           ROUND(AVG(A.SALARY) AS 평균급여 ,
+  ROUND(AVG(EXTRACT(YEAR FROM SYSDATE) - EXTRACT(YEAR FROM A.HIRE_DATE))) AS 평균근속년수
+   FROM HR.EMPLOYEES A 
+        HR.DEPARTMENTS B, HR.LOCATIONS C 
+   WHERE A.DEPARTMENT_ID = B.DEPARTMENT_ID
+         AND B.LOCATION_ID = C.LOCATION_ID --조인조건
+         AND  C.COUNTRY_ID != 'US'  --일반조건
+    GROUP BY  A.DEPARTMENT_ID, B.DEPARTMENT_NAME
+    ORDER BY 2;
    
+   사용예)사원테이블에서 각 부서별** 사원수를 조회하시오
+   ALIAS는 부서코드, 사원수, 사원수2 , 사원수 3
+   SELECT NVL(A.DEPARTMENT_ID,0 )  AS 부서코드, COUNT(*) AS 사원수 
+   FROM HR.EMPLOYEES A
+   GROUP BY A.DEPARTMENT_ID
+   ORDER BY 1;
    
+   사용예)사원테이블에서 부서에 근무하는 사원수가 5명이상인 부서를 조회하시오
+   알리아스는 부서코드, 사원수
+  SELECT  DEPARTMENT_ID AS 부서코드, COUNT(*) AS 사원수
+  FROM HR.EMPLOYEES 
+  GROUP BY DEPARTMENT_ID
+  HAVING COUNT(*) >=5
+  ORDER BY 1;
+  
+  사용예)상품테이블에서 분류별 상품수를 조회하시오
+  SELECT PROD_LGU , COUNT(*) AS 상품수
+  FROM PROD 
+  GROUP BY PROD_LGU
+  ORDER BY 1;
+  
+  사용예)2005년 5월-7월 장바구니테이블에서 월별 매출건수를 조회하시오
+  SELECT  SUBSTR(A.CNO,5,2)||'월'  AS 월,COUNT(*) AS 판매건수 
+  FROM (SELECT DISTINCT CART_NO  AS CNO FROM  CART  
+        WHERE SUBSTR(CART_NO,1,8) BETWEEN '20050501' AND LAST_DAY('20050701')
+        GROUP BY CART_NO
+        ) A
+  GROUP BY  SUBSTR(A.CNO,5,2)||'월'
+  ORDER BY 1;
+  
+   사용예) 사원테이블에서 각 부서별 최대급여와, 최소급여를 조회하시오
+   SELECT DEPARTMENT_ID AS 부서코드, B.EMAX AS 최대급여 , C.EMIN  AS 최소급여  
+   FROM HR.EMPLOYEES A , (SELECT DEPARTMENT_ID, MAX(SALARY) AS EMAX FROM HR.EMPLOYEES GROUP BY DEPARTMENT_ID) B,
+        (SELECT DEPARTMENT_ID, MIN(SALARY) AS EMIN FROM HR.EMPLOYEES GROUP BY DEPARTMENT_ID) C              
+   GROUP BY DEPARTMENT_ID
+   ORDER BY 1;
+   
+   사용예) 2005년 1월 제품별 매입금액합계 중  최소 금액을 기록한 제품을 조회하시오
+     ALIAS는 제품코드, 매입금액
+--     SELECT A.BUY_PROD AS 제품코드 ,  B.BUYMIN AS 매입금액합계
+--     FROM BUYPROD A , (SELECT BUY_PROD AS BP , (SUM(BUY_QTY*BUY_COST)) AS BUYMIN FROM BUYPROD GROUP BY BUY_PROD)B
+--     WHERE  A.BUY_PROD = B.BP --조인조건
+--            AND BUYDATE BETWEEN '20050101' AND LAST_DAY('20050101')              --일반조건
+--     GROUP BY BUY_PROD
+--     ORDER BY 1;
+
+(2005년 1월 제품별 매입금액 합계를 구함)
+SELECT BUY_PROD , SUM(BUY_QTY*BUY_COST) 
+FROM BUYPROD
+WHERE BUY_DATE BETWEEN '20050101' AND LAST_DAY('20050101')
+GROUP BY BUY_PROD;
+
+(이 중 최소금액을 기록한 제품 조회하기)
+SELECT A.BUY_PROD AS 제품코드 , MIN(B.BSUM) AS 최소매입금액 
+FROM BUYPROD A, (SELECT BUY_PROD , SUM(BUY_QTY*BUY_COST) AS BSUM 
+                FROM BUYPROD
+                WHERE BUY_DATE BETWEEN '20050101' AND LAST_DAY('20050101')
+                GROUP BY BUY_PROD)B
+WHERE A.BUY_PROD = B.BUY_PROD;
+
+ 사용예) 사원테이블에서 각 **부서별** 최대급여와, 최소급여를 수령하는 사원을 조회하시오
+       SELECT  A.DEPARTMENT_ID AS 부서코드,
+                 A.EMP_NAME  AS 사원명,
+            B.MXS  AS 최대급여
+       FROM  HR.EMPLOYEES A,
+       (SELECT  DEPARTMENT_ID AS DID,
+                MAX(SALARY) AS MXS
+                FROM HR.EMPLOYEES
+                GROUP BY DEPARTMENT_ID) B
+        WHERE   B.DID = A.DEPARTMENT_ID
+                AND A.SALARY = B.MXS
+        ORDER BY 1;  
+        
+     사용예) 2005년 1월 제품별 매입금액합계 중  최소 금액을 기록한 제품을 조회하시오
+     ALIAS는 제품코드, 매입금액 --집계함수는 집계함수를 포함할 수 없어!!
+ SELECT C.BID AS 상품코드,
+             C.SQC AS 매입금액
+ FROM (SELECT MIN(A.SQC) AS MBS
+       FROM (SELECT BUY_PROD AS BID, SUM(BUY_QTY*BUY_COST) AS SQC --제품별 매입금액 테이블 
+             FROM BUYPROD
+             WHERE BUY_DATE BETWEEN TO_DATE('20050101') AND TO_DATE('20050131')
+             GROUP BY BUY_PROD) A) B,
+      (SELECT BUY_PROD AS BID,SUM(BUY_QTY*BUY_COST) AS SQC
+       FROM BUYPROD
+       WHERE BUY_DATE BETWEEN TO_DATE('20050101') AND TO_DATE('20050131')
+       GROUP BY BUY_PROD) C
+WHERE C.SQC=B.MBS;        
+                  
+
+
+
+
+     
+     
+     

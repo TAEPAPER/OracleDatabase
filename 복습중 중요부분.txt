@@ -141,5 +141,46 @@ WHERE SALARY < B.ASAL
 
 
 --[2022-0117-01]
-사용예) 사원테이블에서 **근무지가 미국 이외인 부서에 근무하는 사원들**의 평균급여와 평균근속년수를 구하시오 --집에 HR 테이블이 없어서 야자시간에 할것!!! 
+------------**********(SELECT FROM WHERE) 의 결과를 하나의 테이블로 생각할 것!!! 
 
+사용예)2005년 5월-7월 장바구니테이블에서 월별 매출건수를 조회하시오
+       SELECT SUBSTR(A.CNO,5,2)||'월'  AS 월 ,
+            COUNT(*) AS 판매건수
+       FROM   (SELECT DISTINCT CART_NO AS CNO
+                FROM CART
+                WHERE SUBSTR(CART_NO,1,6) BETWEEN '200505'  AND '200507'
+                GROUP BY CART_NO) A
+       GROUP BY SUBSTR(A.CNO,5,2)||'월' 
+       ORDER BY 1;
+       
+
+********밑에 문제 원리 이해하는 것 매우 중요!)  --조인을 통해서 데이터를 추리는 느낌!!!!
+사용예) 사원테이블에서 각 **부서별** 최대급여와, 최소급여를 수령하는 사원을 조회하시오
+       SELECT  A.DEPARTMENT_ID AS 부서코드,
+                 A.EMP_NAME  AS 사원명,
+            B.MXS  AS 최대급여
+       FROM  HR.EMPLOYEES A,
+       (SELECT  DEPARTMENT_ID AS DID,
+                MAX(SALARY) AS MXS
+                FROM HR.EMPLOYEES
+                GROUP BY DEPARTMENT_ID) B
+        WHERE B.DID = A.DEPARTMENT_ID
+                AND A.SALARY = B.MXS
+        ORDER BY 1;  
+
+
+사용예) 2005년 1월 제품별 매입금액합계 중  최소 금액을 기록한 제품을 조회하시오
+     ALIAS는 제품코드, 매입금액 --집계함수는 집계함수를 포함할 수 없어!!
+ SELECT C.BID AS 상품코드,
+             C.SQC AS 매입금액
+ FROM (SELECT MIN(A.SQC) AS MBS
+       FROM (SELECT BUY_PROD AS BID, SUM(BUY_QTY*BUY_COST) AS SQC --제품별 매입금액 테이블 
+             FROM BUYPROD
+             WHERE BUY_DATE BETWEEN TO_DATE('20050101') AND TO_DATE('20050131')
+             GROUP BY BUY_PROD) A) B,
+      (SELECT BUY_PROD AS BID,SUM(BUY_QTY*BUY_COST) AS SQC
+       FROM BUYPROD
+       WHERE BUY_DATE BETWEEN TO_DATE('20050101') AND TO_DATE('20050131')
+       GROUP BY BUY_PROD) C
+WHERE C.SQC=B.MBS;        
+            
